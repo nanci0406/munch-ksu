@@ -1210,8 +1210,7 @@ $(vmlinux-dirs): prepare scripts
 	$(Q)$(MAKE) $(build)=$@ need-builtin=1
 
 define filechk_kernel.release
-	echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion \
-		$(srctree) $(BRANCH) $(KMI_GENERATION))"
+	echo "$(if $(KBUILD_KERNEL_RELEASE),$(KBUILD_KERNEL_RELEASE),$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree) $(BRANCH) $(KMI_GENERATION)))"
 endef
 
 # Store (new) KERNELRELEASE string in include/config/kernel.release

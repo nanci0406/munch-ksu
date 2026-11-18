@@ -144,17 +144,21 @@ rm -rf anykernel/
 echo "Clone AnyKernel3 for packing kernel (repo: https://github.com/liyafe1997/AnyKernel3)"
 git clone https://github.com/liyafe1997/AnyKernel3 -b kona --single-branch --depth=1 anykernel
 
-# Add date to local version
-local_version_str="-perf"
-local_version_date_str="-FuXue1.0-$(date +%Y%m%d)"
+# Match stock HyperOS (OS1.0.15.0.ULMCNXM) kernel identity & build metadata for munch
+if [ "$TARGET_DEVICE" = "munch" ]; then
+    export KBUILD_KERNEL_RELEASE="${KBUILD_KERNEL_RELEASE:-4.19.157-perf-ge7d64d2c1baa}"
+    export KBUILD_BUILD_VERSION="${KBUILD_BUILD_VERSION:-1}"
+    export KBUILD_BUILD_TIMESTAMP="${KBUILD_BUILD_TIMESTAMP:-Fri Mar 6 09:36:37 UTC 2026}"
+    export KBUILD_BUILD_USER="${KBUILD_BUILD_USER:-builder}"
+    export KBUILD_BUILD_HOST="${KBUILD_BUILD_HOST:-pangu-build-component-vendor-864456-qx0lp-dqm6n-dqq0z}"
+    export KBUILD_COMPILER_STRING="${KBUILD_COMPILER_STRING:-clang version 10.0.7 for Android NDK, GNU ld (binutils-2.27-bd24d23f) 2.27.0.20170315}"
+fi
 
 DTS_SOURCE=arch/arm64/boot/dts/vendor/qcom
 
 # Restore the working tree even when a build fails midway. Both steps are
 # idempotent on a successful build.
 cleanup() {
-    sed -i "s/${local_version_date_str}/${local_version_str}/g" \
-        "arch/arm64/configs/${TARGET_DEVICE}_defconfig" 2>/dev/null || true
     if [ -d .dts.bak ]; then
         rm -rf "${DTS_SOURCE}"
         mv .dts.bak "${DTS_SOURCE}"
@@ -162,7 +166,19 @@ cleanup() {
 }
 trap cleanup EXIT
 
-sed -i "s/${local_version_str}/${local_version_date_str}/g" arch/arm64/configs/${TARGET_DEVICE}_defconfig
+configure_ksu_options() {
+    if [ $KSU_ENABLE -eq 1 ]; then
+        # Disable IKCONFIG/IKCONFIG_PROC so /proc/config.gz does not expose KSU/SUSFS flags.
+        scripts/config --file out/.config \
+            -e KSU \
+            -e KSU_SUSFS \
+            -e KSU_MANUAL_HOOK \
+            -d IKCONFIG \
+            -d IKCONFIG_PROC
+    else
+        scripts/config --file out/.config -d KSU
+    fi
+}
 
 # ------------- Building for AOSP -------------
 # AOSP builds keep the stock display DTS untouched; the MIUI-specific panel
@@ -178,14 +194,7 @@ make $MAKE_ARGS ${TARGET_DEVICE}_defconfig
 # Disable DEBUG_INFO to avoid gcc-objdump DWARF5 warning spam
 scripts/config --file out/.config -d DEBUG_INFO
 
-if [ $KSU_ENABLE -eq 1 ]; then
-    scripts/config --file out/.config \
-    -e KSU \
-    -e KSU_SUSFS \
-    -e KSU_MANUAL_HOOK
-else
-    scripts/config --file out/.config -d KSU
-fi
+configure_ksu_options
 
 # elish_defconfig enables CONFIG_REKERNEL, whose binder_alloc code uses
 # WARN_AHEAD_SPACE from millet.h. That header only exists under
@@ -301,14 +310,7 @@ make $MAKE_ARGS ${TARGET_DEVICE}_defconfig
 # Disable DEBUG_INFO to avoid gcc-objdump DWARF5 warning spam
 scripts/config --file out/.config -d DEBUG_INFO
 
-if [ $KSU_ENABLE -eq 1 ]; then
-    scripts/config --file out/.config \
-    -e KSU \
-    -e KSU_SUSFS \
-    -e KSU_MANUAL_HOOK
-else
-    scripts/config --file out/.config -d KSU
-fi
+configure_ksu_options
 
 
 scripts/config --file out/.config \

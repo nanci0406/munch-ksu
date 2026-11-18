@@ -1,4 +1,4 @@
-name: Build elish Kernel (MIUI + AOSP + Release)
+name: Build munch Kernel (MIUI + AOSP + Release)
 
 on:
   workflow_dispatch:
@@ -14,13 +14,13 @@ permissions:
 
 jobs:
   build-matrix:
-    name: Build elish | ${{ matrix.variant }} | ${{ matrix.ksu && 'KSU' || 'NoKSU' }}
+    name: Build munch | ${{ matrix.variant }} | ${{ matrix.ksu && 'KSU' || 'NoKSU' }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         device:
-          - elish
+          - munch
         variant:
           - miui
           - aosp
@@ -136,7 +136,7 @@ jobs:
 
             - **构建日期 / Build Date:** ${{ steps.vars.outputs.BUILD_DATE }}
             - **提交哈希 / Commit SHA:** `${{ steps.vars.outputs.SHA_SHORT }}`
-            - **支持设备 / Supported Devices:** `elish`
+            - **支持设备 / Supported Devices:** `munch`
 
             ---
             ### 刷机包分类指南 / Flashable ZIP Instructions:
