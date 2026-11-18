@@ -168,13 +168,12 @@ trap cleanup EXIT
 
 configure_ksu_options() {
     if [ $KSU_ENABLE -eq 1 ]; then
-        # Disable IKCONFIG/IKCONFIG_PROC so /proc/config.gz does not expose KSU/SUSFS flags.
+        # Keep IKCONFIG/IKCONFIG_PROC enabled for Android VINTF checks;
+        # kernel/Makefile embeds arch/arm64/configs/munch_stock-defconfig instead of real .config.
         scripts/config --file out/.config \
             -e KSU \
             -e KSU_SUSFS \
-            -e KSU_MANUAL_HOOK \
-            -d IKCONFIG \
-            -d IKCONFIG_PROC
+            -e KSU_MANUAL_HOOK
     else
         scripts/config --file out/.config -d KSU
     fi
